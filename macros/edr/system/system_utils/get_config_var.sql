@@ -29,7 +29,6 @@
     'disable_test_alerts': false,
     'disable_source_freshness_alerts': false,
     'disable_run_results': false,
-    'disable_freshness_results': false,
     'disable_tests_results': false,
     'disable_dbt_artifacts_autoupload': false,
     'disable_dbt_columns_autoupload': false,
@@ -58,6 +57,7 @@
     'mute_ensure_materialization_override': false,
     'calculate_failed_count': true,
     'tests_use_temp_tables': false,
+    'collect_metrics': false,
     'clean_elementary_temp_tables': true,
     'force_metrics_backfill': false,
     'ignore_small_changes': {

@@ -17,7 +17,6 @@
                 full_table_name,
                 column_name,
                 metric_name,
-                metric_type,
                 metric_value,
                 source_value,
                 bucket_start,

@@ -14,7 +14,3 @@
     {% do return(false) %}
 {% endmacro %}
 
-{% macro athena__has_temp_table_support() %}
-    {% do return(false) %}
-{% endmacro %}
-

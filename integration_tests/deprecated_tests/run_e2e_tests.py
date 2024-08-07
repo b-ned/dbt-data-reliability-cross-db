@@ -7,8 +7,7 @@ from typing import List
 
 import click
 from dbt.version import __version__
-from elementary.clients.dbt.base_dbt_runner import BaseDbtRunner
-from elementary.clients.dbt.factory import create_dbt_runner
+from elementary.clients.dbt.dbt_runner import DbtRunner
 from generate_data import generate_fake_data
 from packaging import version
 
@@ -54,12 +53,16 @@ class TestResults:
         return [result for result in self.results if not result.success]
 
 
-def get_row(alias: str, dbt_runner: BaseDbtRunner) -> str:
+class TestDbtRunner(DbtRunner):
+    pass
+
+
+def get_row(alias: str, dbt_runner: DbtRunner) -> str:
     rows = json.loads(
         dbt_runner.run_operation(
             "elementary_integration_tests.read_table",
             macro_args={"table": "dbt_models", "where": f"alias = '{alias}'"},
-            return_raw_edr_logs=True,
+            should_log=False,
         )[0]
     )
     if len(rows) != 1:
@@ -67,7 +70,7 @@ def get_row(alias: str, dbt_runner: BaseDbtRunner) -> str:
     return rows[0]
 
 
-def test_artifacts_cache(dbt_runner: BaseDbtRunner) -> TestResult:
+def test_artifacts_cache(dbt_runner: TestDbtRunner) -> TestResult:
     test_model = "one"
     dbt_runner.run(test_model, vars={"one_tags": ["hello", "world"]})
     first_row = get_row(test_model, dbt_runner)
@@ -83,7 +86,7 @@ def test_artifacts_cache(dbt_runner: BaseDbtRunner) -> TestResult:
     )
 
 
-def test_artifacts_update(dbt_runner: BaseDbtRunner) -> TestResult:
+def test_artifacts_update(dbt_runner: TestDbtRunner) -> TestResult:
     test_model = "one"
     dbt_runner.run(test_model)
     first_row = get_row(test_model, dbt_runner)
@@ -107,7 +110,7 @@ def e2e_tests(
 ) -> TestResults:
     test_results = TestResults()
 
-    dbt_runner = create_dbt_runner(
+    dbt_runner = TestDbtRunner(
         project_dir=FILE_DIR,
         target=target,
         raise_on_failure=False,
@@ -118,8 +121,7 @@ def e2e_tests(
 
     if clear_tests:
         clear_test_logs = dbt_runner.run_operation(
-            macro_name="elementary_integration_tests.clear_tests",
-            return_raw_edr_logs=True,
+            macro_name="elementary_integration_tests.clear_tests", should_log=False
         )
         for clear_test_log in clear_test_logs:
             print(clear_test_log)
@@ -129,6 +131,7 @@ def e2e_tests(
     if "dimension" in test_types:
         dbt_runner.run_operation(
             macro_name="elementary_integration_tests.create_new_dimension",
+            should_log=True,
         )
 
     if "error_model" in test_types:
@@ -136,7 +139,7 @@ def e2e_tests(
             TestResult(type="error_model", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_error_model",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -153,7 +156,7 @@ def e2e_tests(
             TestResult(type="seasonal_volume", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_seasonal_volume_anomalies",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -167,7 +170,7 @@ def e2e_tests(
             TestResult(type="table_anomalies", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_table_anomalies",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -189,7 +192,7 @@ def e2e_tests(
             TestResult(type="error_snapshot", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_error_snapshot",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -202,7 +205,7 @@ def e2e_tests(
             dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.return_config_var",
                 macro_args={"var_name": "days_back"},
-                return_raw_edr_logs=True,
+                should_log=False,
             )[0]
         )
         # No need to create today's metric because the validation run does it.
@@ -241,7 +244,7 @@ def e2e_tests(
             TestResult(type="directional_anomalies", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_directional_anomalies",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -260,7 +263,7 @@ def e2e_tests(
             TestResult(type="no_timestamp_anomalies", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_no_timestamp_anomalies",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -274,7 +277,7 @@ def e2e_tests(
             TestResult(type="event_freshness_anomalies", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_event_freshness_anomalies",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -288,7 +291,7 @@ def e2e_tests(
             TestResult(type="column_anomalies", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_column_anomalies",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -302,7 +305,7 @@ def e2e_tests(
             TestResult(type="backfill_days", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_backfill_days",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -316,13 +319,14 @@ def e2e_tests(
             TestResult(type="dimension_anomalies", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_dimension_anomalies",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
 
         dbt_runner.run_operation(
             macro_name="elementary_integration_tests.delete_new_dimension",
+            should_log=True,
         )
 
     if "schema" in test_types and target not in ["databricks", "spark"]:
@@ -334,7 +338,7 @@ def e2e_tests(
             TestResult(type="schema_changes", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_schema_changes",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -348,7 +352,7 @@ def e2e_tests(
             TestResult(type="regular_tests", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_regular_tests",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -362,7 +366,7 @@ def e2e_tests(
             TestResult(type="config_levels", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_config_levels",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -372,7 +376,7 @@ def e2e_tests(
             TestResult(type="artifacts", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_dbt_artifacts",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -392,7 +396,7 @@ def e2e_tests(
             TestResult(type="error_test", message=msg)
             for msg in dbt_runner.run_operation(
                 macro_name="elementary_integration_tests.validate_error_test",
-                return_raw_edr_logs=True,
+                should_log=False,
             )
         ]
         test_results.extend(results)
@@ -415,7 +419,7 @@ def e2e_tests(
                     message=dbt_runner.run_operation(
                         "elementary_integration_tests.assert_table_doesnt_exist",
                         macro_args={"model_name": "non_dbt_model"},
-                        return_raw_edr_logs=True,
+                        should_log=False,
                     )[0],
                 )
         except ValueError:

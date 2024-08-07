@@ -5,27 +5,21 @@
     {{ elementary.file_log("Get relation. " ~ elementary.get_elementary_relation('test_result_rows')) }}
     
     {% set cached_elementary_test_results = elementary.get_cache("elementary_test_results") %}
-    {# {% set cached_elementary_test_results = {'test.jaffle_shop.test1': [{'id': '48aa463e-bc83-4894-9e40-310c9330295e.test.jaffle_shop.test1', 'data_issue_id': None, 'test_execution_id': '48aa463e-bc83-4894-9e40-310c9330295e.test.jaffle_shop.test1', 'test_unique_id': 'test.jaffle_shop.test1', 'model_unique_id': None, 'detected_at': '2024-05-17 06:02:45', 'database_name': None, 'schema_name': 'dwh', 'table_name': 'Undefined', 'column_name': None, 'test_type': 'dbt_test', 'test_sub_type': 'singular', 'other': None, 'owners': [], 'tags': [], 'test_results_query': 'select 1', 'test_name': 'test1', 'test_params': {}, 'severity': 'ERROR', 'test_short_name': 'test1', 'test_alias': 'test1', 'result_rows': [{'1': 1}]}]} %} #} #}
     {% set cached_elementary_test_failed_row_counts = elementary.get_cache("elementary_test_failed_row_counts") %}
-
     {% set store_result_rows_in_own_table = elementary.get_config_var("store_result_rows_in_own_table") %}
-    {# {{ elementary.file_log("Get store_result_rows_in_own_table " ~ store_result_rows_in_own_table) }} #}
-    
     {% set elementary_test_results = elementary.get_result_enriched_elementary_test_results(cached_elementary_test_results, cached_elementary_test_failed_row_counts, render_result_rows=(not store_result_rows_in_own_table)) %}
-    {# {% set elementary_test_results = [{'id': '2c537ac2-b453-4a80-8a53-4649f56507e0.test.jaffle_shop.test1', 'data_issue_id': None, 'test_execution_id': '2c537ac2-b453-4a80-8a53-4649f56507e0.test.jaffle_shop.test1', 'test_unique_id': 'test.jaffle_shop.test1', 'model_unique_id': None, 'detected_at': '2024-05-17 06:49:31', 'database_name': None, 'schema_name': 'dwh', 'table_name': Undefined, 'column_name': None, 'test_type': 'dbt_test', 'test_sub_type': 'singular', 'other': None, 'owners': [], 'tags': [], 'test_results_query': 'select 1', 'test_name': 'test1', 'test_params': {}, 'severity': 'ERROR', 'test_short_name': 'test1', 'test_alias': 'test1', 'status': 'fail', 'failures': 1, 'invocation_id': '2c537ac2-b453-4a80-8a53-4649f56507e0', 'failed_row_count': None, 'test_results_description': 'Got 1 result, configured to fail if != 0'}] %} #}
-    
-    
-    {# {{ elementary.file_log("Get elementary_test_results " ~ elementary_test_results) }} #}
 
     {% if store_result_rows_in_own_table %}
       {% set test_result_rows = elementary.pop_test_result_rows(elementary_test_results) %}
     {% endif %}
-    {{ print(test_result_rows) }}
 
     {% set tables_cache = elementary.get_cache("tables") %}
+    
     {% set persist_elementary_test_results = elementary.get_config_var("persist_elementary_test_results") %}
+
     {% if persist_elementary_test_results %}
       {% do elementary.upload_dbt_tests %}
+      {# Logging cached values to dbt.log, so they can be picked up by parser #}
       {{ elementary.file_log("____start_test_results" ~ cached_elementary_test_results ~ "____end_test_results"  )}}
       {{ elementary.file_log("____start_test_failed_row_counts" ~ cached_elementary_test_failed_row_counts ~ "____end_test_failed_row_counts"  )}}
       {{ elementary.file_log("____start_enriched_test_results" ~ elementary_test_results ~ "____end_enriched_test_results"  )}}
@@ -33,7 +27,7 @@
       {{ elementary.file_log("____start_test_result_rows" ~ test_result_rows ~ "____end_test_result_rows"  )}}
     {% endif %}
 
-    {# {{ elementary.file_log("Get tables_cache " ~ tables_cache) }} #}
+
     {% set test_metrics_tables = tables_cache.get("metrics").get("relations") %}
     {{ elementary.file_log("Get test_metrics_tables " ~ test_metrics_tables) }}
     {% set test_columns_snapshot_tables = tables_cache.get("schema_snapshots") %}

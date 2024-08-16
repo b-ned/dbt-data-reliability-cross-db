@@ -28,7 +28,8 @@ for line in input_data.splitlines():
 latest_run_marker = run_markers[-1] if run_markers else None
 
 # Initialize the sections content
-sections = ["", "", "", "", ""]
+sections = [{}, {}, [], {}, []]
+
 print("Parsing test results from : ", latest_run_marker)
 
 if latest_run_marker:
@@ -58,20 +59,19 @@ macro_content = """
 
 """
 
-macro_content += "    {% set cached_elementary_test_results = " + sections[0] + " %}"
-macro_content += "\n"
-macro_content += "    \n"
-macro_content += "    {% set cached_elementary_test_failed_row_counts = " + sections[1] + " %}"
-macro_content += "\n"
-macro_content += "    \n"
-macro_content += "    {% set elementary_test_results = " + sections[2] + " %}"
-macro_content += "\n"
-macro_content += "    \n"
-macro_content += "    {% set tables_cache = " + sections[3] + " %}"
-macro_content += "\n"
-macro_content += "    \n"
-macro_content += "    {% set test_result_rows = " + sections[4] + " %}"
-macro_content += "\n"
+var_names = [
+    "cached_elementary_test_results",
+    "cached_elementary_test_failed_row_counts",
+    "elementary_test_results",
+    "tables_cache",
+    "test_result_rows"
+]
+
+# Loop through each section and add it to the macro content with conditional checks
+for i, section in enumerate(sections):
+    if section != "":
+        macro_content += "    {% set " + var_names[i] +" = " + section + "  %}\n"
+
 macro_content += "    \n"
 macro_content += """
     {% set store_result_rows_in_own_table = elementary.get_config_var("store_result_rows_in_own_table") %}
